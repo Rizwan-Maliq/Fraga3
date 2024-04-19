@@ -1,0 +1,131 @@
+﻿using System;
+using Newtonsoft.Json;
+using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace Statistics
+{
+    public static class Statistics
+    {
+        private static int[] data;
+
+        static Statistics()
+        {
+            try
+            {
+                LoadData();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Fel vid inläsning av data: {ex.Message}");
+                data = new int[0];
+            }
+        }
+
+        private static void LoadData()
+        {
+            string json = File.ReadAllText("data.json");
+            data = JsonConvert.DeserializeObject<int[]>(json);
+        }
+
+        public static dynamic DescriptiveStatistics(int[] inputData)
+        {
+            // Anropa LoadData om inget data har laddats ännu
+            if (data == null)
+            {
+                LoadData();
+            }
+
+            // Använd inputData om det tillhandahålls, annars använd den lagrade datan
+            int[] dataSet = inputData ?? data;
+
+            Dictionary<string, dynamic> statisticsList = new Dictionary<string, dynamic>()
+            {
+                { "Maximum", Maximum(dataSet) },
+                { "Minimum", Minimum(dataSet) },
+                { "Medelvärde", Mean(dataSet) },
+                { "Median", Median(dataSet) },
+                { "Typvärde", Mode(dataSet) },
+                { "Variationsbredd", Range(dataSet) },
+                { "Standardavvikelse", StandardDeviation(dataSet) }
+            };
+
+            string output =
+                $"Maximum: {statisticsList["Maximum"]}\n" +
+                $"Minimum: {statisticsList["Minimum"]}\n" +
+                $"Medelvärde: {statisticsList["Medelvärde"]}\n" +
+                $"Median: {statisticsList["Median"]}\n" +
+                $"Typvärde: {string.Join(", ", statisticsList["Typvärde"])}\n" +
+                $"Variationsbredd: {statisticsList["Variationsbredd"]}\n" +
+                $"Standardavvikelse: {statisticsList["Standardavvikelse"]}";
+
+            return output;
+        }
+
+        public static int Maximum(int[] dataSet)
+        {
+            if (dataSet.Length == 0) return 0;
+            return dataSet.Max();
+        }
+
+        public static int Minimum(int[] dataSet)
+        {
+            if (dataSet.Length == 0) return 0;
+            return dataSet.Min();
+        }
+
+        public static double Mean(int[] dataSet)
+        {
+            if (dataSet.Length == 0) return 0;
+            return dataSet.Average();
+        }
+
+        public static double Median(int[] dataSet)
+        {
+            if (dataSet.Length == 0) return 0;
+            int size = dataSet.Length;
+            int mid = size / 2;
+            double median = (size % 2 != 0) ? (double)dataSet[mid] : (dataSet[mid - 1] + dataSet[mid]) / 2.0;
+            return median;
+        }
+
+        public static int[] Mode(int[] dataSet)
+        {
+            if (dataSet.Length == 0) return new int[0];
+
+            Dictionary<int, int> numberCounts = new Dictionary<int, int>();
+
+            foreach (int num in dataSet)
+            {
+                if (numberCounts.ContainsKey(num))
+                {
+                    numberCounts[num]++;
+                }
+                else
+                {
+                    numberCounts[num] = 1;
+                }
+            }
+
+            int maxCount = numberCounts.Values.Max();
+            int[] modes = numberCounts.Where(kv => kv.Value == maxCount).Select(kv => kv.Key).ToArray();
+            return modes;
+        }
+
+        public static int Range(int[] dataSet)
+        {
+            if (dataSet.Length == 0) return 0;
+            return dataSet.Max() - dataSet.Min();
+        }
+
+        public static double StandardDeviation(int[] dataSet)
+        {
+            if (dataSet.Length == 0) return 0;
+            double average = dataSet.Average();
+            double sumOfSquaresOfDifferences = dataSet.Select(val => (val - average) * (val - average)).Sum();
+            double sd = Math.Sqrt(sumOfSquaresOfDifferences / dataSet.Length);
+            return sd;
+        }
+    }
+}
